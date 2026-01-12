@@ -2,6 +2,7 @@ package com.qiu.example.provider;
 
 import com.qiu.example.common.service.UserService;
 import com.qiu.example.provider.service.impl.UserServiceImpl;
+import com.qiu.rpc.RpcApplication;
 import com.qiu.rpc.registry.LocalRegistry;
 import com.qiu.rpc.server.HttpServer;
 import com.qiu.rpc.server.impl.VertxHttpServer;
@@ -20,6 +21,9 @@ import java.util.List;
 public class ProviderExample {
 
     public static void main(String[] args) {
+        // RPC 框架初始化
+        RpcApplication.init();
+
         // 注册服务
         LocalRegistry.register(UserService.class.getName(), UserServiceImpl.class);
 
