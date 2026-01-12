@@ -42,4 +42,9 @@ public class KryoSerializer implements Serializer {
         input.close();
         return (T) o;
     }
+
+    @Override
+    public String contentType() {
+        return "application/x-kryo";
+    }
 }
