@@ -2,6 +2,7 @@ package com.qiu.example.consumer;
 
 import com.qiu.example.common.model.User;
 import com.qiu.example.common.service.UserService;
+import com.qiu.rpc.proxy.ServiceProxyFactory;
 
 /**
  * @author qiu
@@ -16,7 +17,7 @@ public class ConsumerExample {
 
     public static void main(String[] args) {
         // TODO 实现消费服务的获取
-        UserService userService = null;
+        UserService userService = ServiceProxyFactory.getProxy(UserService.class);
 
         User user = userService.getUser(722);
         System.out.println("获取到用户信息: " + user);
