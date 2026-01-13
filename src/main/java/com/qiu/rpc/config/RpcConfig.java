@@ -1,5 +1,6 @@
 package com.qiu.rpc.config;
 
+import com.qiu.rpc.serializer.SerializerKeys;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,4 +30,6 @@ public class RpcConfig {
     private Integer serverPort = 18080;
 
     private boolean mock = false;
+
+    private String serializer = SerializerKeys.KRYO.getKey();
 }

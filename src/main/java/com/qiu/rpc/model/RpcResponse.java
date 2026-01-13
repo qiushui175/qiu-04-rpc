@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 /**
  * @author qiu
  * @version 1.0
@@ -18,7 +20,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RpcResponse {
+public class RpcResponse implements Serializable {
+
+    private static final long serialVersionUID = 9009444901038748943L;
 
     private Object data;
 
