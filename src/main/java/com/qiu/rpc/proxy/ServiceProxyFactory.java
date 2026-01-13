@@ -23,4 +23,11 @@ public class ServiceProxyFactory {
                 new ServiceProxy(new KryoSerializer()));
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T getMockProxy(Class<T> serviceClass) {
+        return (T) Proxy.newProxyInstance(
+                serviceClass.getClassLoader(),
+                new Class[]{serviceClass},
+                new MockServiceProxy());
+    }
 }
