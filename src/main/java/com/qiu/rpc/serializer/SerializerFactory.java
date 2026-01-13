@@ -3,6 +3,7 @@ package com.qiu.rpc.serializer;
 import com.qiu.rpc.serializer.HessianImpl.HessianSerializer;
 import com.qiu.rpc.serializer.JsonImpl.JsonSerializer;
 import com.qiu.rpc.serializer.KryoImpl.KryoSerializer;
+import com.qiu.rpc.spi.SpiLoader;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -17,7 +18,7 @@ import java.util.Map;
  * @since 1.0
  */
 public class SerializerFactory {
-    private static final Map<SerializerKeys, Serializer> SERIALIZER_MAP =
+    /*private static final Map<SerializerKeys, Serializer> SERIALIZER_MAP =
             new EnumMap<>(SerializerKeys.class);
 
     static {
@@ -40,6 +41,14 @@ public class SerializerFactory {
             throw new IllegalArgumentException("Unknown serializer key: " + key);
         }
         return getSerializer(serializerKey);
+    }*/
+
+    static {
+        SpiLoader.load(Serializer.class);
+    }
+
+    public static Serializer getSerializer(String key) {
+        return SpiLoader.getInstance(Serializer.class, key);
     }
 
 }
