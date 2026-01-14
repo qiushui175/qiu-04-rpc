@@ -27,10 +27,13 @@ public class RpcApplication {
         rpcConfig = config;
         log.info("RpcApplication initialized with config: {}", rpcConfig);
 
-        // 注册中兴初始化
+        // 注册中心初始化
         RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
         Registry registry = RegistryFactory.getRegistryAndInit(registryConfig);
         log.info("Registry initialized: {}", registryConfig);
+
+        // 创建主动下线
+        Runtime.getRuntime().addShutdownHook(new Thread(registry::destroy));
     }
 
     public static void init() {
