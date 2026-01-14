@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
+import static com.qiu.rpc.constant.RpcConstant.*;
+
 /**
  * @author qiu
  * @version 1.0
@@ -31,4 +33,10 @@ public class RpcRequest implements Serializable {
     private Class<?>[] parameterTypes;
 
     private Object[] parameters;
+
+    @Builder.Default
+    private String serviceVersion = DEFAULT_SERVICE_VERSION;
+
+    @Builder.Default
+    private String serviceGroup = DEFAULT_SERVICE_GROUP;
 }

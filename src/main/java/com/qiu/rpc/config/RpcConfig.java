@@ -32,4 +32,6 @@ public class RpcConfig {
     private boolean mock = false;
 
     private String serializer = SerializerKeys.KRYO.getKey();
+
+    private RegistryConfig registryConfig = new RegistryConfig();
 }

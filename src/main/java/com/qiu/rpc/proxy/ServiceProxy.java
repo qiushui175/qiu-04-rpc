@@ -2,12 +2,18 @@ package com.qiu.rpc.proxy;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.qiu.rpc.RpcApplication;
+import com.qiu.rpc.config.RegistryConfig;
 import com.qiu.rpc.model.RpcRequest;
 import com.qiu.rpc.model.RpcResponse;
+import com.qiu.rpc.model.ServiceMetaInfo;
+import com.qiu.rpc.registry.Registry;
+import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.serializer.Serializer;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * @author qiu
@@ -39,10 +45,23 @@ public class ServiceProxy implements InvocationHandler {
             byte[] bytes = serializer.serialize(rpcRequest);
             byte[] res;
 
-            // TODO 这里的地址要动态发现
-            try (HttpResponse httpResponse = HttpRequest.post("http://localhost:18080")
-                    .body(bytes)
-                    .execute()) {
+            // 获取到注册中心配置
+            RegistryConfig registryConfig = RpcApplication.getRpcConfig().getRegistryConfig();
+            Registry registry = RegistryFactory.getRegistry(registryConfig.getRegistry());
+            // 通过服务基本参数，去获取到地址和信息
+            ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
+            serviceMetaInfo.setServiceName(rpcRequest.getServiceName());
+            serviceMetaInfo.setServiceGroup(rpcRequest.getServiceGroup());
+            serviceMetaInfo.setServiceVersion(rpcRequest.getServiceVersion());
+            List<ServiceMetaInfo> serviceList = registry.serverDiscovery(serviceMetaInfo.getServiceKey());
+
+            // TODO 对服务进行选择，现在简单的选择第一个
+            ServiceMetaInfo chooseServiceInfo = serviceList.get(0);
+            try (HttpResponse httpResponse =
+                         HttpRequest.post(String.format("http://%s:%d",
+                                         chooseServiceInfo.getServiceHost(), chooseServiceInfo.getServicePort()))
+                                 .body(bytes)
+                                 .execute()) {
                 res = httpResponse.bodyBytes();
             }
 
