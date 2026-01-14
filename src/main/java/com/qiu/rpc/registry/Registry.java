@@ -36,4 +36,6 @@ public interface Registry {
     List<ServiceMetaInfo> serverDiscovery(String serviceKey);
 
     void destroy();
+
+    void heartBeat();
 }
