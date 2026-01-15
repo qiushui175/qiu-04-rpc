@@ -31,6 +31,15 @@ public class ConsumerExample {
         user = userService.getUser(1197);
         System.out.println("获取到用户信息: " + user);
 
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        user = userService.getUser(1197);
+        System.out.println("获取到用户信息: " + user);
+
         System.out.println("------------mock-------------");
 
         UserService mockProxy = ServiceProxyFactory.getMockProxy(UserService.class);
