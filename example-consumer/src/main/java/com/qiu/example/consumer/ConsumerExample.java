@@ -28,6 +28,9 @@ public class ConsumerExample {
         User user = userService.getUser(722);
         System.out.println("获取到用户信息: " + user);
 
+        user = userService.getUser(1197);
+        System.out.println("获取到用户信息: " + user);
+
         System.out.println("------------mock-------------");
 
         UserService mockProxy = ServiceProxyFactory.getMockProxy(UserService.class);

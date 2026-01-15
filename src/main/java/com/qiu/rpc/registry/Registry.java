@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutionException;
  */
 public interface Registry {
 
-    void init(RegistryConfig registryConfig);
+    void init(RegistryConfig registryConfig,  String role);
 
     /**
      * 注册服务

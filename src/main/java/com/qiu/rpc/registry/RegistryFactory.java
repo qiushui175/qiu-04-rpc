@@ -22,9 +22,9 @@ public class RegistryFactory {
         return SpiLoader.getInstance(Registry.class, protocol);
     }
 
-    public static Registry getRegistryAndInit(RegistryConfig registryConfig) {
+    public static Registry getRegistryAndInit(RegistryConfig registryConfig, String role) {
         Registry instance = SpiLoader.getInstance(Registry.class, registryConfig.getRegistry());
-        instance.init(registryConfig);
+        instance.init(registryConfig, role);
         return instance;
     }
 }

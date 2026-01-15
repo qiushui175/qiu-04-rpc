@@ -37,19 +37,22 @@ public class EtcdRegistry implements Registry {
     private Client client;
     private KV kvClient;
 
+    private final RegistryServiceCache registryServiceCache = new RegistryServiceCache();
+
     /**
      * /rpc_registry/[服务名]:[版本]:[分组]/[服务IP]:[端口]
      */
     private static final String ETCD_REGISTRY_ROOT_PATH = "/rpc_registry/";
 
     @Override
-    public void init(RegistryConfig registryConfig) {
+    public void init(RegistryConfig registryConfig, String role) {
         this.client = Client.builder()
                 .endpoints(registryConfig.getAddress())
                 .connectTimeout(Duration.ofMillis(registryConfig.getTimeout()))
                 .build();
         this.kvClient = client.getKVClient();
-        heartBeat();
+
+        if ("provider".equals(role)) heartBeat();
     }
 
     @Override
@@ -99,18 +102,23 @@ public class EtcdRegistry implements Registry {
         String searchPath = ETCD_REGISTRY_ROOT_PATH + serviceKey + "/";
         ByteSequence prefix = ByteSequence.from(searchPath, StandardCharsets.UTF_8);
 
-        List<ServiceMetaInfo> serviceMetaInfos = new ArrayList<>();
-
+        List<ServiceMetaInfo> serviceMetaInfos = registryServiceCache.getServiceCache(serviceKey);
+        if (CollUtil.isNotEmpty(serviceMetaInfos)) {
+            log.info("Get service info from local cache: {}", serviceKey);
+            return serviceMetaInfos;
+        }
         GetResponse response = kvClient
                 .get(prefix, GetOption.newBuilder().isPrefix(true).build())
                 .join(); // <-- 替换 get()
 
+        List<ServiceMetaInfo> finalServiceMetaInfos = new ArrayList<>();
         response.getKvs().forEach(kv -> {
             String value = kv.getValue().toString(StandardCharsets.UTF_8);
-            serviceMetaInfos.add(JSONUtil.toBean(value, ServiceMetaInfo.class));
+            finalServiceMetaInfos.add(JSONUtil.toBean(value, ServiceMetaInfo.class));
         });
-
-        return serviceMetaInfos;
+        registryServiceCache.writeServiceCache(serviceKey, finalServiceMetaInfos);
+        log.info("Get service info from etcd registry: {}", serviceKey);
+        return finalServiceMetaInfos;
     }
 
     /**
@@ -118,6 +126,10 @@ public class EtcdRegistry implements Registry {
      */
     @Override
     public void destroy() {
+        if (CronUtil.getScheduler().isStarted()) {
+            CronUtil.stop();
+        }
+
         List<CompletableFuture<?>> futures = new ArrayList<>();
 
         for (String key : localRegistryCache) {

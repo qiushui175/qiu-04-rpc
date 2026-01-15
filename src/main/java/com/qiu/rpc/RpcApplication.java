@@ -29,7 +29,7 @@ public class RpcApplication {
 
         // 注册中心初始化
         RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
-        Registry registry = RegistryFactory.getRegistryAndInit(registryConfig);
+        Registry registry = RegistryFactory.getRegistryAndInit(registryConfig, rpcConfig.getRole());
         log.info("Registry initialized: {}", registryConfig);
 
         // 创建主动下线
