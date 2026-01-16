@@ -223,11 +223,30 @@ public class EtcdRegistry implements Registry {
                             log.info("Service node deleted: {}", key);
 
                             // 清缓存（按服务维度）
-                            registryServiceCache.clearServiceCache();
+                            //  只删除对应节点的服务，而不是全部清理
+                            // 现在获取到的 key 是完整路径，需要截取服务维度路径  /rpc_registry/com.qiu.example.common.service.UserService:1.0:default/localhost:18080
+//                            registryServiceCache.clearServiceCache();
+                            registryServiceCache.removeServiceCache(extractServiceKey(key));
                             watchedKeys.remove(serviceNodeKey);
                         }
                     }
                 }
         );
     }
+
+
+    private String extractServiceKey(String fullEtcdKey) {
+        // 去掉根路径
+        String withoutRoot = fullEtcdKey.substring(ETCD_REGISTRY_ROOT_PATH.length());
+
+        // 从右侧找到最后一个 /
+        int lastSlashIndex = withoutRoot.lastIndexOf('/');
+        if (lastSlashIndex == -1) {
+            return withoutRoot;
+        }
+
+        // service 维度
+        return withoutRoot.substring(0, lastSlashIndex);
+    }
+
 }
