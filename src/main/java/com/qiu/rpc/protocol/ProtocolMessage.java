@@ -33,6 +33,4 @@ public class ProtocolMessage<T> {
         private int bodyLength; // 消息体长度
     }
 
-
-
 }
