@@ -1,0 +1,3 @@
+json=com.qiu.rpc.serializer.JsonImpl.JsonSerializer
+kryo=com.qiu.rpc.serializer.KryoImpl.KryoSerializer
+hessian=com.qiu.rpc.serializer.HessianImpl.HessianSerializer

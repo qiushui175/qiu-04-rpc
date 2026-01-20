@@ -2,7 +2,10 @@ package com.qiu.example.consumer;
 
 import com.qiu.example.common.model.User;
 import com.qiu.example.common.service.UserService;
+import com.qiu.rpc.config.RpcConfig;
 import com.qiu.rpc.proxy.ServiceProxyFactory;
+import com.qiu.rpc.server.tcp.VertxTcpFactory;
+import com.qiu.rpc.utils.ConfigUtils;
 
 /**
  * @author qiu
@@ -16,11 +19,39 @@ import com.qiu.rpc.proxy.ServiceProxyFactory;
 public class ConsumerExample {
 
     public static void main(String[] args) {
+        // 配置读取
+        RpcConfig rpc = ConfigUtils.loadConfig(RpcConfig.class, "rpc");
+        System.out.println(rpc);
+
         // TODO 实现消费服务的获取
         UserService userService = ServiceProxyFactory.getProxy(UserService.class);
 
-        User user = userService.getUser(722);
+        System.out.println("------------normal-------------");
+
+        User user;
+        for (int i = 0; i < 1000; i++) {
+            user = userService.getUser(i);
+            System.out.println("获取到用户信息: " + user);
+        }
+
+//        user = userService.getUser(1197);
+//        System.out.println("获取到用户信息: " + user);
+
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        user = userService.getUser(1197);
         System.out.println("获取到用户信息: " + user);
+
+        System.out.println("------------mock-------------");
+
+        UserService mockProxy = ServiceProxyFactory.getMockProxy(UserService.class);
+        System.out.println("mock number:" + mockProxy.getNumber());
+
+        VertxTcpFactory.shutdown();
     }
 
 }

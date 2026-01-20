@@ -1,6 +1,8 @@
 package com.qiu.rpc.server.impl;
 
+import com.qiu.rpc.RpcApplication;
 import com.qiu.rpc.serializer.KryoImpl.KryoSerializer;
+import com.qiu.rpc.serializer.SerializerFactory;
 import com.qiu.rpc.server.HttpServer;
 import com.qiu.rpc.server.handler.HttpServerHandler;
 import io.vertx.core.Vertx;
@@ -37,7 +39,8 @@ public class VertxHttpServer implements HttpServer {
 //                    .end("Hello from Vert.x HTTP Server!");
 //        });
 
-        httpServer.requestHandler(new HttpServerHandler(new KryoSerializer()));
+        // TODO 这里要和客户端保持一致，要动态获取，现在使用的是默认配置
+        httpServer.requestHandler(new HttpServerHandler(SerializerFactory.getSerializer(RpcApplication.getRpcConfig().getSerializer())));
 
         // 监听指定端口
         httpServer.listen(port, result -> {

@@ -1,6 +1,8 @@
 package com.qiu.rpc.proxy;
 
+import com.qiu.rpc.RpcApplication;
 import com.qiu.rpc.serializer.KryoImpl.KryoSerializer;
+import com.qiu.rpc.serializer.SerializerFactory;
 
 import java.lang.reflect.Proxy;
 
@@ -20,7 +22,14 @@ public class ServiceProxyFactory {
         return (T) Proxy.newProxyInstance(
                 serviceClass.getClassLoader(),
                 new Class[]{serviceClass},
-                new ServiceProxy(new KryoSerializer()));
+                new ServiceProxy(SerializerFactory.getSerializer(RpcApplication.getRpcConfig().getSerializer())));
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T getMockProxy(Class<T> serviceClass) {
+        return (T) Proxy.newProxyInstance(
+                serviceClass.getClassLoader(),
+                new Class[]{serviceClass},
+                new MockServiceProxy());
+    }
 }

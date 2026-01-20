@@ -13,4 +13,8 @@ import com.qiu.example.common.model.User;
  */
 public interface UserService {
     User getUser(Integer id);
+
+    default short getNumber(){
+        return 1;
+    }
 }
