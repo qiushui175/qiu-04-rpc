@@ -1,6 +1,7 @@
 package com.qiu.rpc.server.tcp;
 
 import com.qiu.rpc.server.HttpServer;
+import com.qiu.rpc.server.handler.TcpServerHandler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetServer;
@@ -15,16 +16,17 @@ public class VertxTcpServer implements HttpServer {
         // TCP server implementation would go here
         NetServer netServer = vertx.createNetServer();
 
-        netServer.connectHandler(netSocket -> {
-            netSocket.handler(buffer -> {
-                byte[] requestData = buffer.getBytes();
-
-                byte[] responseData = handleRequest(requestData);
-
-                netSocket.write(Buffer.buffer(responseData));
-            });
-        });
-
+//        netServer.connectHandler(netSocket -> {
+//            netSocket.handler(buffer -> {
+//                byte[] requestData = buffer.getBytes();
+//
+//                byte[] responseData = handleRequest(requestData);
+//
+//                netSocket.write(Buffer.buffer(responseData));
+//            });
+//        });
+        netServer.connectHandler(new TcpServerHandler());
+        log.info("start listen");
         netServer.listen(port, res -> {
             if (res.succeeded()) {
                 log.info("TCP server is now listening on port " + port);

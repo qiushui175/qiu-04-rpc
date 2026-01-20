@@ -25,14 +25,16 @@ public class ConsumerExample {
         // TODO 实现消费服务的获取
         UserService userService = ServiceProxyFactory.getProxy(UserService.class);
 
+        System.out.println("------------normal-------------");
+
         User user = userService.getUser(722);
         System.out.println("获取到用户信息: " + user);
 
-        user = userService.getUser(1197);
-        System.out.println("获取到用户信息: " + user);
+//        user = userService.getUser(1197);
+//        System.out.println("获取到用户信息: " + user);
 
         try {
-            Thread.sleep(15000);
+            Thread.sleep(1500);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

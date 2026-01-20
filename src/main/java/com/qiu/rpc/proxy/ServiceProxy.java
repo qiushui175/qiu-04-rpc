@@ -1,5 +1,6 @@
 package com.qiu.rpc.proxy;
 
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.qiu.rpc.RpcApplication;
@@ -7,13 +8,19 @@ import com.qiu.rpc.config.RegistryConfig;
 import com.qiu.rpc.model.RpcRequest;
 import com.qiu.rpc.model.RpcResponse;
 import com.qiu.rpc.model.ServiceMetaInfo;
+import com.qiu.rpc.protocol.*;
 import com.qiu.rpc.registry.Registry;
 import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.serializer.Serializer;
+import io.vertx.core.Vertx;
+import io.vertx.core.net.NetClient;
+import io.vertx.core.net.NetSocket;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author qiu
@@ -42,8 +49,8 @@ public class ServiceProxy implements InvocationHandler {
                 .build();
 
         try {
-            byte[] bytes = serializer.serialize(rpcRequest);
-            byte[] res;
+//            byte[] bytes = serializer.serialize(rpcRequest);
+//            byte[] res;
 
             // 获取到注册中心配置
             RegistryConfig registryConfig = RpcApplication.getRpcConfig().getRegistryConfig();
@@ -57,20 +64,74 @@ public class ServiceProxy implements InvocationHandler {
 
             // TODO 对服务进行选择，现在简单的选择第一个
             ServiceMetaInfo chooseServiceInfo = serviceList.get(0);
-            try (HttpResponse httpResponse =
-                         HttpRequest.post(String.format("http://%s:%d",
-                                         chooseServiceInfo.getServiceHost(), chooseServiceInfo.getServicePort()))
-                                 .body(bytes)
-                                 .execute()) {
-                res = httpResponse.bodyBytes();
-            }
-
-            RpcResponse response = serializer.deserialize(res, RpcResponse.class);
+            // 通过http方式进行调用
+            //RpcResponse response = getResponseFromHttp(chooseServiceInfo, rpcRequest);
+            RpcResponse response = getResponseFromTcp(chooseServiceInfo, rpcRequest);
             return response.getData();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         return null;
+    }
+
+    private RpcResponse getResponseFromHttp(ServiceMetaInfo chooseServiceInfo, RpcRequest rpcRequest) throws Exception {
+        byte[] bytes = serializer.serialize(rpcRequest);
+        byte[] res;
+        try (HttpResponse httpResponse =
+                     HttpRequest.post(String.format("http://%s:%d",
+                                     chooseServiceInfo.getServiceHost(), chooseServiceInfo.getServicePort()))
+                             .body(bytes)
+                             .execute()) {
+            res = httpResponse.bodyBytes();
+        }
+        RpcResponse response = serializer.deserialize(res, RpcResponse.class);
+        return response;
+    }
+
+    private RpcResponse getResponseFromTcp(ServiceMetaInfo chooseServiceInfo, RpcRequest rpcRequest) throws Exception {
+        // 使用tcp方式进行调用
+        Vertx vertx = Vertx.vertx();
+        NetClient netClient = vertx.createNetClient();
+        CompletableFuture<RpcResponse> completableFuture = new CompletableFuture<>();
+        netClient.connect(chooseServiceInfo.getServicePort(), chooseServiceInfo.getServiceHost(), connectResult -> {
+            if (connectResult.succeeded()) {
+                NetSocket resultSocket = connectResult.result();
+                ProtocolMessage<RpcRequest> protocolMessage = new ProtocolMessage<>();
+                ProtocolMessage.Header header = new ProtocolMessage.Header();
+                header.setMagic(ProtocolConstant.PROTOCOL_MAGIC);
+                header.setVersion(ProtocolConstant.PROTOCOL_VERSION);
+                header.setSerializationType(ProtocolMessageSerializerEnum.getByName(RpcApplication.getRpcConfig().getSerializer()).getCode());
+                header.setMessageType((byte) ProtocolMessageTypeEnum.REQUEST.getType());
+                header.setStatus((byte) ProtocolMessageStatusEnum.OK.getCode());
+                header.setRequestId(IdUtil.getSnowflakeNextId());
+
+                protocolMessage.setHeader(header);
+                protocolMessage.setBody(rpcRequest);
+
+                try {
+                    // 编码
+                    resultSocket.write(ProtocolMessageEncoder.encode(protocolMessage));
+                } catch (Exception e) {
+                    completableFuture.completeExceptionally(e);
+                }
+
+                resultSocket.handler(buffer -> {
+                    try {
+                        ProtocolMessage<RpcResponse> rpcResponse = (ProtocolMessage<RpcResponse>) ProtocolMessageDecoder.decode(buffer);
+                        completableFuture.complete(rpcResponse.getBody());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+            } else {
+                completableFuture.completeExceptionally(connectResult.cause());
+            }
+        });
+
+
+        netClient.close();
+        return completableFuture.get();
     }
 }

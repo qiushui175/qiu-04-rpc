@@ -11,6 +11,7 @@ import com.qiu.rpc.registry.Registry;
 import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.server.HttpServer;
 import com.qiu.rpc.server.impl.VertxHttpServer;
+import com.qiu.rpc.server.tcp.VertxTcpServer;
 
 import java.util.concurrent.ExecutionException;
 
@@ -49,8 +50,12 @@ public class ProviderExample {
         registry.register(serviceMetaInfo);
 
         // 服务提供
-        HttpServer httpServer = new VertxHttpServer();
-        httpServer.doStart(rpcConfig.getServerPort());
+//        HttpServer httpServer = new VertxHttpServer();
+//        httpServer.doStart(rpcConfig.getServerPort());
+
+        // tcp
+        VertxTcpServer vertxTcpServer = new VertxTcpServer();
+        vertxTcpServer.doStart(rpcConfig.getServerPort());
     }
 
 }

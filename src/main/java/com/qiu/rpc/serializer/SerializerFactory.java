@@ -48,7 +48,7 @@ public class SerializerFactory {
     }
 
     public static Serializer getSerializer(String key) {
-        return SpiLoader.getInstance(Serializer.class, key);
+        return SpiLoader.getInstance(Serializer.class, key.toLowerCase());
     }
 
 }

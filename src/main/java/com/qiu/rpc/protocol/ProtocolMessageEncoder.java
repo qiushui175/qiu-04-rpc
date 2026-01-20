@@ -28,7 +28,7 @@ public class ProtocolMessageEncoder {
         if (serializerEnum == null) {
             throw new IOException("Unsupported serialization type: " + header.getSerializationType());
         }
-        Serializer serializer = SerializerFactory.getSerializer(serializerEnum.getName());
+        Serializer serializer = SerializerFactory.getSerializer(serializerEnum.getName().toLowerCase());
         byte[] bodyBytes = serializer.serialize(protocolMessage.getBody());
 
         buffer.appendInt(bodyBytes.length);
