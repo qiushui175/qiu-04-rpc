@@ -70,6 +70,7 @@ public class ServiceProxy implements InvocationHandler {
 //            ServiceMetaInfo chooseServiceInfo = serviceList.get(0);
             LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(RpcApplication.getRpcConfig().getLoadBalancer());
             HashMap<String, Object> requestParams = new HashMap<>();
+            requestParams.put("serviceName", rpcRequest.getServiceName());
             requestParams.put("methodName", method.getName());
             ServiceMetaInfo chooseServiceInfo = loadBalancer.select(requestParams, serviceList);
             // 通过http方式进行调用
