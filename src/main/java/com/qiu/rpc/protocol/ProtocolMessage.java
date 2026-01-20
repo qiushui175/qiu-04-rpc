@@ -24,7 +24,7 @@ public class ProtocolMessage<T> {
 
     @Data
     public static class Header {
-        private int magic; // 魔数
+        private byte magic; // 魔数
         private byte version; // 版本号
         private byte serializationType; // 序列化类型
         private byte messageType; // 消息类型
