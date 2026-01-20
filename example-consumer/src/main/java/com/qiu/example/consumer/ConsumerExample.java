@@ -4,6 +4,7 @@ import com.qiu.example.common.model.User;
 import com.qiu.example.common.service.UserService;
 import com.qiu.rpc.config.RpcConfig;
 import com.qiu.rpc.proxy.ServiceProxyFactory;
+import com.qiu.rpc.server.tcp.VertxTcpFactory;
 import com.qiu.rpc.utils.ConfigUtils;
 
 /**
@@ -27,8 +28,11 @@ public class ConsumerExample {
 
         System.out.println("------------normal-------------");
 
-        User user = userService.getUser(722);
-        System.out.println("获取到用户信息: " + user);
+        User user;
+        for (int i = 0; i < 1000; i++) {
+            user = userService.getUser(i);
+            System.out.println("获取到用户信息: " + user);
+        }
 
 //        user = userService.getUser(1197);
 //        System.out.println("获取到用户信息: " + user);
@@ -46,6 +50,8 @@ public class ConsumerExample {
 
         UserService mockProxy = ServiceProxyFactory.getMockProxy(UserService.class);
         System.out.println("mock number:" + mockProxy.getNumber());
+
+        VertxTcpFactory.shutdown();
     }
 
 }

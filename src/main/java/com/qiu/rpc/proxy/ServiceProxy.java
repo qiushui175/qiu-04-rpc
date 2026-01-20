@@ -12,6 +12,7 @@ import com.qiu.rpc.protocol.*;
 import com.qiu.rpc.registry.Registry;
 import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.serializer.Serializer;
+import com.qiu.rpc.server.tcp.VertxTcpFactory;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
@@ -91,8 +92,7 @@ public class ServiceProxy implements InvocationHandler {
 
     private RpcResponse getResponseFromTcp(ServiceMetaInfo chooseServiceInfo, RpcRequest rpcRequest) throws Exception {
         // 使用tcp方式进行调用
-        Vertx vertx = Vertx.vertx();
-        NetClient netClient = vertx.createNetClient();
+        NetClient netClient = VertxTcpFactory.getNetClientInstance();
         CompletableFuture<RpcResponse> completableFuture = new CompletableFuture<>();
         netClient.connect(chooseServiceInfo.getServicePort(), chooseServiceInfo.getServiceHost(), connectResult -> {
             if (connectResult.succeeded()) {
@@ -130,8 +130,7 @@ public class ServiceProxy implements InvocationHandler {
             }
         });
 
-
-        netClient.close();
+//        netClient.close();
         return completableFuture.get();
     }
 }
