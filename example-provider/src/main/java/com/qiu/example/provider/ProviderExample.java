@@ -29,6 +29,18 @@ import static com.qiu.rpc.constant.RpcConstant.DEFAULT_SERVICE_GROUP;
 public class ProviderExample {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
+        // 获取端口参数
+        int port = 18080; // 默认端口
+        if (args.length > 0) {
+            try {
+                port = Integer.parseInt(args[0]); // 从命令行参数获取端口
+            } catch (NumberFormatException e) {
+                System.out.println("无效的端口号，使用默认端口: " + port);
+            }
+        }
+        System.out.println("使用的端口号: " + port);
+
+
         // RPC 框架初始化
         RpcApplication.init();
 
@@ -38,6 +50,7 @@ public class ProviderExample {
 
         // 将信息发布到注册中心
         RpcConfig rpcConfig = RpcApplication.getRpcConfig();
+        rpcConfig.setServerPort(port);
         RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
         Registry registry = RegistryFactory.getRegistry(registryConfig.getRegistry());
         ServiceMetaInfo serviceMetaInfo = new ServiceMetaInfo();
@@ -56,6 +69,7 @@ public class ProviderExample {
         // tcp
         VertxTcpServer vertxTcpServer = new VertxTcpServer();
         vertxTcpServer.doStart(rpcConfig.getServerPort());
+//        vertxTcpServer.doStart(port);
     }
 
 }

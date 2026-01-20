@@ -1,5 +1,6 @@
 package com.qiu.rpc.config;
 
+import com.qiu.rpc.loadbalancer.LoadBalancerKeys;
 import com.qiu.rpc.serializer.SerializerKeys;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,4 +37,6 @@ public class RpcConfig {
     private String serializer = SerializerKeys.KRYO.getKey();
 
     private RegistryConfig registryConfig = new RegistryConfig();
+
+    private String loadBalancer = LoadBalancerKeys.ROUND_ROBIN.getKey();
 }

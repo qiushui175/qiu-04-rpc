@@ -5,6 +5,8 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.qiu.rpc.RpcApplication;
 import com.qiu.rpc.config.RegistryConfig;
+import com.qiu.rpc.loadbalancer.LoadBalancer;
+import com.qiu.rpc.loadbalancer.LoadBalancerFactory;
 import com.qiu.rpc.model.RpcRequest;
 import com.qiu.rpc.model.RpcResponse;
 import com.qiu.rpc.model.ServiceMetaInfo;
@@ -20,6 +22,7 @@ import io.vertx.core.net.NetSocket;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -64,7 +67,11 @@ public class ServiceProxy implements InvocationHandler {
             List<ServiceMetaInfo> serviceList = registry.serverDiscovery(serviceMetaInfo.getServiceKey());
 
             // TODO 对服务进行选择，现在简单的选择第一个
-            ServiceMetaInfo chooseServiceInfo = serviceList.get(0);
+//            ServiceMetaInfo chooseServiceInfo = serviceList.get(0);
+            LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(RpcApplication.getRpcConfig().getLoadBalancer());
+            HashMap<String, Object> requestParams = new HashMap<>();
+            requestParams.put("methodName", method.getName());
+            ServiceMetaInfo chooseServiceInfo = loadBalancer.select(requestParams, serviceList);
             // 通过http方式进行调用
             //RpcResponse response = getResponseFromHttp(chooseServiceInfo, rpcRequest);
             RpcResponse response = getResponseFromTcp(chooseServiceInfo, rpcRequest);
