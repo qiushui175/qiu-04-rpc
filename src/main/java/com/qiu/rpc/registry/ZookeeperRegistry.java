@@ -202,6 +202,11 @@ public class ZookeeperRegistry implements Registry {
     }
 
     @Override
+    public void cleanLocalCache() {
+        registryServiceCache.clearServiceCache();
+    }
+
+    @Override
     public void destroy() {
         for (String path : localRegistryCache) {
             try {
@@ -216,6 +221,11 @@ public class ZookeeperRegistry implements Registry {
         if (client != null) {
             client.close();
         }
+    }
+
+    @Override
+    public void cleanLocalCache(String serviceKey) {
+        registryServiceCache.removeServiceCache(serviceKey);
     }
 }
 

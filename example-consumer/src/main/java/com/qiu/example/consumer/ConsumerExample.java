@@ -29,7 +29,7 @@ public class ConsumerExample {
         System.out.println("------------normal-------------");
 
         User user;
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 1; i++) {
             user = userService.getUser(i);
             System.out.println("获取到用户信息: " + user);
         }

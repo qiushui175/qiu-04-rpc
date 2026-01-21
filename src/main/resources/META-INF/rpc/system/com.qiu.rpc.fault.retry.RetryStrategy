@@ -1,0 +1,2 @@
+no=com.qiu.rpc.fault.retry.impl.NoRetryStrategy
+fixedInterval=com.qiu.rpc.fault.retry.impl.FixedIntervalRetryStrategy

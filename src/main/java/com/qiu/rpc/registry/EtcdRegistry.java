@@ -234,6 +234,16 @@ public class EtcdRegistry implements Registry {
         );
     }
 
+    @Override
+    public void cleanLocalCache() {
+        registryServiceCache.clearServiceCache();
+    }
+
+    @Override
+    public void cleanLocalCache(String serviceKey) {
+        registryServiceCache.removeServiceCache(serviceKey);
+    }
+
 
     private String extractServiceKey(String fullEtcdKey) {
         // 去掉根路径

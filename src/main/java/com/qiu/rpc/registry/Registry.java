@@ -40,4 +40,8 @@ public interface Registry {
     void heartBeat();
 
     void watch(String serviceNodeKey);
+
+    void cleanLocalCache();
+
+    void cleanLocalCache(String serviceKey);
 }
