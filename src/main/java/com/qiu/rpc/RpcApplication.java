@@ -22,10 +22,11 @@ public class RpcApplication {
 
     private static volatile RpcConfig rpcConfig;
 
-    public static void init(RpcConfig config) {
+    public static void init(RpcConfig config, String role) {
         // 加载基础配置
         rpcConfig = config;
         log.info("RpcApplication initialized with config: {}", rpcConfig);
+        config.setRole(role);
 
         // 注册中心初始化
         RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
@@ -36,21 +37,21 @@ public class RpcApplication {
         Runtime.getRuntime().addShutdownHook(new Thread(registry::destroy));
     }
 
-    public static void init() {
+    public static void init(String role) {
         RpcConfig newConfig;
         try {
             newConfig = ConfigUtils.loadConfig(RpcConfig.class, RpcConstant.DEFAULT_CONFIG_PREFIX);
         } catch (Exception e) {
             newConfig = new RpcConfig();
         }
-        init(newConfig);
+        init(newConfig, role == null ? newConfig.getRole() : role);
     }
 
     public static RpcConfig getRpcConfig() {
         if (rpcConfig == null) {
             synchronized (RpcApplication.class) {
                 if (rpcConfig == null) {
-                    init();
+                    init(null);
                 }
             }
         }
