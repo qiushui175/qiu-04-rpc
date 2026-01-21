@@ -1,0 +1,2 @@
+failFast=com.qiu.rpc.fault.tolerant.impl.FailFastTolerantStrategy
+failSafe=com.qiu.rpc.fault.tolerant.impl.FailSafeTolerantStrategy

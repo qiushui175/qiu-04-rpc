@@ -1,6 +1,7 @@
 package com.qiu.rpc.config;
 
 import com.qiu.rpc.fault.retry.RetryStrategyKey;
+import com.qiu.rpc.fault.tolerant.TolerantStrategyKey;
 import com.qiu.rpc.loadbalancer.LoadBalancerKeys;
 import com.qiu.rpc.serializer.SerializerKeys;
 import lombok.AllArgsConstructor;
@@ -42,4 +43,6 @@ public class RpcConfig {
     private String loadBalancer = LoadBalancerKeys.ROUND_ROBIN.getKey();
 
     private String retryStrategy = RetryStrategyKey.FIXED_INTERVAL.getKey();
+
+    private String tolerantStrategy = TolerantStrategyKey.FAIL_SAFE.getKey();
 }

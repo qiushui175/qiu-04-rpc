@@ -8,6 +8,8 @@ import com.qiu.rpc.config.RegistryConfig;
 import com.qiu.rpc.config.RpcConfig;
 import com.qiu.rpc.fault.retry.RetryStrategy;
 import com.qiu.rpc.fault.retry.RetryStrategyFactory;
+import com.qiu.rpc.fault.tolerant.TolerantStrategy;
+import com.qiu.rpc.fault.tolerant.TolerantStrategyFactory;
 import com.qiu.rpc.loadbalancer.LoadBalancer;
 import com.qiu.rpc.loadbalancer.LoadBalancerFactory;
 import com.qiu.rpc.model.RpcRequest;
@@ -57,6 +59,7 @@ public class ServiceProxy implements InvocationHandler {
                 .parameters(args)
                 .build();
 
+        RpcResponse response = null;
         try {
 //            byte[] bytes = serializer.serialize(rpcRequest);
 //            byte[] res;
@@ -82,13 +85,15 @@ public class ServiceProxy implements InvocationHandler {
 
             // 重试机制
             RetryStrategy retryStrategy = RetryStrategyFactory.getInstance(rpcConfig.getRetryStrategy());
-            RpcResponse response = retryStrategy.doRetry(() -> getResponseFromTcp(chooseServiceInfo, rpcRequest));
-            return response.getData();
+            response = retryStrategy.doRetry(() -> getResponseFromTcp(chooseServiceInfo, rpcRequest));
+
         } catch (Exception e) {
-            e.printStackTrace();
+            TolerantStrategy tolerantStrategy = TolerantStrategyFactory.getInstance(RpcApplication.getRpcConfig().getTolerantStrategy());
+            response = tolerantStrategy.doTolerant(null, e);
+//            e.printStackTrace();
         }
 
-        return null;
+        return response.getData();
     }
 
     private RpcResponse getResponseFromHttp(ServiceMetaInfo chooseServiceInfo, RpcRequest rpcRequest) throws Exception {
