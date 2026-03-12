@@ -2,10 +2,7 @@ package com.qiu.rpc.server.handler;
 
 import com.qiu.rpc.model.RpcRequest;
 import com.qiu.rpc.model.RpcResponse;
-import com.qiu.rpc.protocol.ProtocolMessage;
-import com.qiu.rpc.protocol.ProtocolMessageDecoder;
-import com.qiu.rpc.protocol.ProtocolMessageEncoder;
-import com.qiu.rpc.protocol.ProtocolMessageTypeEnum;
+import com.qiu.rpc.protocol.*;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
@@ -51,15 +48,19 @@ public class TcpServerHandler implements Handler<NetSocket> {
                 response.setException(e);
             }
 
-            // 发送
+            // 发送（复用请求消息的 Header 对象）
             ProtocolMessage.Header header = protocolMessage.getHeader();
             header.setMessageType((byte) ProtocolMessageTypeEnum.RESPONSE.getType());
             ProtocolMessage<RpcResponse> responseProtocolMessage = new ProtocolMessage<>(header, response);
             try {
+                // encode() 将 Header 字段写入独立 Buffer，完成后 Header 不再被 Buffer 引用
                 Buffer resp = ProtocolMessageEncoder.encode(responseProtocolMessage);
+                // 编码完成后立即归还 Header 到对象池（Buffer 已持有数据副本）
+                ProtocolMessagePool.releaseHeader(header);
                 netSocket.write(resp);
                 log.info("Response sent to client");
             } catch (IOException e) {
+                ProtocolMessagePool.releaseHeader(header);
                 throw new RuntimeException(e);
             }
 

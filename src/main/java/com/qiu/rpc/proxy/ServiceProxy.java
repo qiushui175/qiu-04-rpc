@@ -21,6 +21,7 @@ import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.serializer.Serializer;
 import com.qiu.rpc.server.tcp.VertxTcpFactory;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
 import lombok.extern.slf4j.Slf4j;
@@ -123,7 +124,8 @@ public class ServiceProxy implements InvocationHandler {
             if (connectResult.succeeded()) {
                 NetSocket resultSocket = connectResult.result();
                 ProtocolMessage<RpcRequest> protocolMessage = new ProtocolMessage<>();
-                ProtocolMessage.Header header = new ProtocolMessage.Header();
+                // 从对象池获取 Header，减少 GC 压力
+                ProtocolMessage.Header header = ProtocolMessagePool.acquireHeader();
                 header.setMagic(ProtocolConstant.PROTOCOL_MAGIC);
                 header.setVersion(ProtocolConstant.PROTOCOL_VERSION);
                 header.setSerializationType(ProtocolMessageSerializerEnum.getByName(RpcApplication.getRpcConfig().getSerializer()).getCode());
@@ -135,18 +137,28 @@ public class ServiceProxy implements InvocationHandler {
                 protocolMessage.setBody(rpcRequest);
 
                 try {
-                    // 编码
-                    resultSocket.write(ProtocolMessageEncoder.encode(protocolMessage));
+                    // 编码（使用 Direct Memory 零拷贝 Buffer）
+                    // encode() 将 Header 字段写入独立 Buffer，完成后 Header 不再被 Buffer 引用
+                    Buffer encodedBuffer = ProtocolMessageEncoder.encode(protocolMessage);
+                    // 编码完成后立即归还 Header 到对象池（Buffer 已持有数据副本）
+                    ProtocolMessagePool.releaseHeader(header);
+                    resultSocket.write(encodedBuffer);
                 } catch (Exception e) {
+                    ProtocolMessagePool.releaseHeader(header);
                     completableFuture.completeExceptionally(e);
                 }
 
                 resultSocket.handler(buffer -> {
+                    ProtocolMessage.Header respHeader = null;
                     try {
                         ProtocolMessage<RpcResponse> rpcResponse = (ProtocolMessage<RpcResponse>) ProtocolMessageDecoder.decode(buffer);
+                        respHeader = rpcResponse.getHeader();
                         completableFuture.complete(rpcResponse.getBody());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
+                    } finally {
+                        // 归还响应消息的 Header 到对象池
+                        ProtocolMessagePool.releaseHeader(respHeader);
                     }
                 });
 
