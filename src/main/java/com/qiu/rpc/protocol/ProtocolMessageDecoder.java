@@ -11,7 +11,7 @@ import java.io.IOException;
 public class ProtocolMessageDecoder {
 
     public static ProtocolMessage<?> decode(Buffer buffer) throws IOException {
-        if (buffer == null || buffer.length() < 17) { // 最小头部 + bodyLength 字节数
+        if (buffer == null || buffer.length() < ProtocolConstant.MESSAGE_HEADER_LENGTH) {
             throw new IOException("Insufficient data to decode ProtocolMessage");
         }
 
@@ -32,13 +32,15 @@ public class ProtocolMessageDecoder {
 
         byte[] bodyBytes = buffer.getBytes(pos, pos + bodyLen);
 
-        ProtocolMessage.Header header = new ProtocolMessage.Header();
+        // 从对象池获取 Header，减少高并发下频繁创建对象带来的 GC 压力
+        ProtocolMessage.Header header = ProtocolMessagePool.acquireHeader();
         header.setMagic(magic);
         header.setVersion(version);
         header.setSerializationType(serializationType);
         header.setMessageType(messageType);
         header.setStatus(status);
         header.setRequestId(requestId);
+        header.setBodyLength(bodyLen);
 
         ProtocolMessageSerializerEnum serializerEnum = ProtocolMessageSerializerEnum.getByCode(header.getSerializationType());
         if (serializerEnum == null) {

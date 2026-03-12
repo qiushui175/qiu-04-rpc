@@ -123,7 +123,8 @@ public class ServiceProxy implements InvocationHandler {
             if (connectResult.succeeded()) {
                 NetSocket resultSocket = connectResult.result();
                 ProtocolMessage<RpcRequest> protocolMessage = new ProtocolMessage<>();
-                ProtocolMessage.Header header = new ProtocolMessage.Header();
+                // 从对象池获取 Header，减少 GC 压力
+                ProtocolMessage.Header header = ProtocolMessagePool.acquireHeader();
                 header.setMagic(ProtocolConstant.PROTOCOL_MAGIC);
                 header.setVersion(ProtocolConstant.PROTOCOL_VERSION);
                 header.setSerializationType(ProtocolMessageSerializerEnum.getByName(RpcApplication.getRpcConfig().getSerializer()).getCode());
@@ -135,18 +136,26 @@ public class ServiceProxy implements InvocationHandler {
                 protocolMessage.setBody(rpcRequest);
 
                 try {
-                    // 编码
+                    // 编码（使用 Direct Memory 零拷贝 Buffer）
                     resultSocket.write(ProtocolMessageEncoder.encode(protocolMessage));
                 } catch (Exception e) {
                     completableFuture.completeExceptionally(e);
+                } finally {
+                    // 编码完成后归还 Header 到对象池
+                    ProtocolMessagePool.releaseHeader(header);
                 }
 
                 resultSocket.handler(buffer -> {
+                    ProtocolMessage.Header respHeader = null;
                     try {
                         ProtocolMessage<RpcResponse> rpcResponse = (ProtocolMessage<RpcResponse>) ProtocolMessageDecoder.decode(buffer);
+                        respHeader = rpcResponse.getHeader();
                         completableFuture.complete(rpcResponse.getBody());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
+                    } finally {
+                        // 归还响应消息的 Header 到对象池
+                        ProtocolMessagePool.releaseHeader(respHeader);
                     }
                 });
 
