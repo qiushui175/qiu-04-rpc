@@ -19,10 +19,10 @@ public class VertxTcpClient {
                 // 处理响应数据
                 socket.handler(buffer -> {
                     byte[] responseData = buffer.getBytes();
-                   log.info("Received response: " + new String(responseData));
+                   // log.info("Received response: " + new String(responseData));
                 });
             } else {
-               log.info("Failed to connect to server: " + res.cause().getMessage());
+               // log.info("Failed to connect to server: " + res.cause().getMessage());
             }
         });
     }

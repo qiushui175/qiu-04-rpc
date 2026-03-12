@@ -25,13 +25,13 @@ public class RpcApplication {
     public static void init(RpcConfig config, String role) {
         // 加载基础配置
         rpcConfig = config;
-        log.info("RpcApplication initialized with config: {}", rpcConfig);
+        // log.info("RpcApplication initialized with config: {}", rpcConfig);
         config.setRole(role);
 
         // 注册中心初始化
         RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
         Registry registry = RegistryFactory.getRegistryAndInit(registryConfig, rpcConfig.getRole());
-        log.info("Registry initialized: {}", registryConfig);
+        // log.info("Registry initialized: {}", registryConfig);
 
         // 创建主动下线
         Runtime.getRuntime().addShutdownHook(new Thread(registry::destroy));

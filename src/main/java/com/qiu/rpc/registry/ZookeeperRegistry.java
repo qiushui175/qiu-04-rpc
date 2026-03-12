@@ -72,7 +72,7 @@ public class ZookeeperRegistry implements Registry {
 
         // ZK 使用临时节点，本身不需要 heartbeat
         if ("provider".equals(role)) {
-            log.info("Zookeeper registry initialized for provider");
+            // log.info("Zookeeper registry initialized for provider");
         }
     }
 
@@ -99,7 +99,7 @@ public class ZookeeperRegistry implements Registry {
             }
 
             localRegistryCache.add(nodePath);
-            log.info("Service registered: {}", nodePath);
+            // log.info("Service registered: {}", nodePath);
         } catch (Exception e) {
             throw new RuntimeException("Register service failed", e);
         }
@@ -186,7 +186,7 @@ public class ZookeeperRegistry implements Registry {
                 case CHILD_ADDED:
                 case CHILD_REMOVED:
                 case CHILD_UPDATED:
-                    log.info("Service changed: {}, clear cache", serviceKey);
+                    // log.info("Service changed: {}, clear cache", serviceKey);
                     registryServiceCache.removeServiceCache(serviceKey);
                     break;
                 default:

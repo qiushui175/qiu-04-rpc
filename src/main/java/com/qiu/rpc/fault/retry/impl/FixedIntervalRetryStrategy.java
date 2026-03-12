@@ -24,12 +24,12 @@ public class FixedIntervalRetryStrategy implements RetryStrategy {
 
         Retryer<RpcResponse> retryer = RetryerBuilder.<RpcResponse>newBuilder()
                 .retryIfExceptionOfType(Exception.class)
-                .withWaitStrategy(WaitStrategies.fixedWait(3L, TimeUnit.SECONDS))
+                .withWaitStrategy(WaitStrategies.fixedWait(10L, TimeUnit.SECONDS))
                 .withStopStrategy(StopStrategies.stopAfterAttempt(3))
                 .withRetryListener(new RetryListener() {
                     @Override
                     public <V> void onRetry(Attempt<V> attempt) {
-                        log.info("重试次数{}", attempt.getAttemptNumber());
+                        // log.info("重试次数{}", attempt.getAttemptNumber());
                     }
                 })
                 .build();

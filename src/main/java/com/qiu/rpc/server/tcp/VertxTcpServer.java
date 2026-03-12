@@ -26,12 +26,12 @@ public class VertxTcpServer implements HttpServer {
 //            });
 //        });
         netServer.connectHandler(new TcpServerHandler());
-        log.info("start listen");
+        // log.info("start listen");
         netServer.listen(port, res -> {
             if (res.succeeded()) {
-                log.info("TCP server is now listening on port " + port);
+                // log.info("TCP server is now listening on port " + port);
             } else {
-                log.info("Failed to bind TCP server on port " + port + ": " + res.cause().getMessage());
+                // log.info("Failed to bind TCP server on port " + port + ": " + res.cause().getMessage());
             }
         });
     }
@@ -39,7 +39,7 @@ public class VertxTcpServer implements HttpServer {
     private byte[] handleRequest(byte[] requestData) {
         // 在这里对数据进行处理
         // exp
-        log.info("Received request: " + new String(requestData));
+        // log.info("Received request: " + new String(requestData));
         return "hello client".getBytes();
     }
 

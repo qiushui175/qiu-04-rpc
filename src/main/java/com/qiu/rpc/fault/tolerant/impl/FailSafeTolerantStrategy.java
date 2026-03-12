@@ -19,7 +19,7 @@ import java.util.Map;
 public class FailSafeTolerantStrategy implements TolerantStrategy {
     @Override
     public RpcResponse doTolerant(Map<String, Object> context, Exception e) {
-        log.info("Fail safe tolerant strategy triggered. Exception: {}", e.getMessage());
+        // log.info("Fail safe tolerant strategy triggered. Exception: {}", e.getMessage());
         return new RpcResponse();
     }
 }

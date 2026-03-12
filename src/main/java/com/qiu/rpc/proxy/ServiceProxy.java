@@ -19,10 +19,8 @@ import com.qiu.rpc.protocol.*;
 import com.qiu.rpc.registry.Registry;
 import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.serializer.Serializer;
-import com.qiu.rpc.server.tcp.VertxTcpFactory;
-import io.vertx.core.Vertx;
-import io.vertx.core.net.NetClient;
-import io.vertx.core.net.NetSocket;
+import com.qiu.rpc.server.tcp.PendingRequestManager;
+import com.qiu.rpc.server.tcp.TcpConnectionManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -31,6 +29,8 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author qiu
@@ -61,9 +61,6 @@ public class ServiceProxy implements InvocationHandler {
 
         RpcResponse response = null;
         try {
-//            byte[] bytes = serializer.serialize(rpcRequest);
-//            byte[] res;
-
             // 获取到注册中心配置
             RpcConfig rpcConfig = RpcApplication.getRpcConfig();
             RegistryConfig registryConfig = rpcConfig.getRegistryConfig();
@@ -75,6 +72,7 @@ public class ServiceProxy implements InvocationHandler {
             serviceMetaInfo.setServiceGroup(rpcRequest.getServiceGroup());
             serviceMetaInfo.setServiceVersion(rpcRequest.getServiceVersion());
             List<ServiceMetaInfo> serviceList = registry.serverDiscovery(serviceMetaInfo.getServiceKey());
+//            log.info(String.valueOf(serviceList.size()));
 
             // 负载均衡
             LoadBalancer loadBalancer = LoadBalancerFactory.getInstance(rpcConfig.getLoadBalancer());
@@ -90,7 +88,6 @@ public class ServiceProxy implements InvocationHandler {
         } catch (Exception e) {
             TolerantStrategy tolerantStrategy = TolerantStrategyFactory.getInstance(RpcApplication.getRpcConfig().getTolerantStrategy());
             response = tolerantStrategy.doTolerant(null, e);
-//            e.printStackTrace();
         }
 
         return response.getData();
@@ -106,56 +103,63 @@ public class ServiceProxy implements InvocationHandler {
                              .execute()) {
             res = httpResponse.bodyBytes();
         }
-        RpcResponse response = serializer.deserialize(res, RpcResponse.class);
-        return response;
+        return serializer.deserialize(res, RpcResponse.class);
     }
 
     private RpcResponse getResponseFromTcp(ServiceMetaInfo chooseServiceInfo, RpcRequest rpcRequest) throws Exception {
-        // 使用tcp方式进行调用
         if (chooseServiceInfo == null) {
-            log.info("未找到可用服务提供者");
             throw new RuntimeException("未找到可用服务提供者");
         }
-        log.info("发起tcp调用，服务地址：{}:{}", chooseServiceInfo.getServiceHost(), chooseServiceInfo.getServicePort());
-        NetClient netClient = VertxTcpFactory.getNetClientInstance();
-        CompletableFuture<RpcResponse> completableFuture = new CompletableFuture<>();
-        netClient.connect(chooseServiceInfo.getServicePort(), chooseServiceInfo.getServiceHost(), connectResult -> {
-            if (connectResult.succeeded()) {
-                NetSocket resultSocket = connectResult.result();
-                ProtocolMessage<RpcRequest> protocolMessage = new ProtocolMessage<>();
-                ProtocolMessage.Header header = new ProtocolMessage.Header();
-                header.setMagic(ProtocolConstant.PROTOCOL_MAGIC);
-                header.setVersion(ProtocolConstant.PROTOCOL_VERSION);
-                header.setSerializationType(ProtocolMessageSerializerEnum.getByName(RpcApplication.getRpcConfig().getSerializer()).getCode());
-                header.setMessageType((byte) ProtocolMessageTypeEnum.REQUEST.getType());
-                header.setStatus((byte) ProtocolMessageStatusEnum.OK.getCode());
-                header.setRequestId(IdUtil.getSnowflakeNextId());
 
-                protocolMessage.setHeader(header);
-                protocolMessage.setBody(rpcRequest);
+        long requestId = IdUtil.getSnowflakeNextId();
 
-                try {
-                    // 编码
-                    resultSocket.write(ProtocolMessageEncoder.encode(protocolMessage));
-                } catch (Exception e) {
-                    completableFuture.completeExceptionally(e);
-                }
+        ProtocolMessage<RpcRequest> protocolMessage = new ProtocolMessage<>();
+        ProtocolMessage.Header header = new ProtocolMessage.Header();
+        header.setMagic(ProtocolConstant.PROTOCOL_MAGIC);
+        header.setVersion(ProtocolConstant.PROTOCOL_VERSION);
+        header.setSerializationType(ProtocolMessageSerializerEnum.getByName(
+                RpcApplication.getRpcConfig().getSerializer()).getCode());
+        header.setMessageType((byte) ProtocolMessageTypeEnum.REQUEST.getType());
+        header.setStatus((byte) ProtocolMessageStatusEnum.OK.getCode());
+        header.setRequestId(requestId);
 
-                resultSocket.handler(buffer -> {
-                    try {
-                        ProtocolMessage<RpcResponse> rpcResponse = (ProtocolMessage<RpcResponse>) ProtocolMessageDecoder.decode(buffer);
-                        completableFuture.complete(rpcResponse.getBody());
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        protocolMessage.setHeader(header);
+        protocolMessage.setBody(rpcRequest);
 
-            } else {
-                completableFuture.completeExceptionally(connectResult.cause());
+        CompletableFuture<RpcResponse> responseFuture = new CompletableFuture<>();
+        PendingRequestManager.PENDING_REQUESTS.put(requestId, responseFuture);
+
+        try {
+//            log.info("port:" + chooseServiceInfo.getServicePort());
+            // 获取连接包装器（包含 socket + 写入锁）
+            TcpConnectionManager.ConnectionWrapper wrapper = TcpConnectionManager.getConnection(
+                    chooseServiceInfo.getServiceHost(),
+                    chooseServiceInfo.getServicePort()
+            );
+
+            io.vertx.core.net.NetSocket socket = wrapper.getSocketFuture()
+                    .get(5, TimeUnit.SECONDS);
+
+            // 先编码成 Buffer（这一步不需要锁，可以并行）
+            io.vertx.core.buffer.Buffer encodedMsg = ProtocolMessageEncoder.encode(protocolMessage);
+
+            // 使用安全写入，保证整个消息的字节原子地写入 socket
+            wrapper.safeWrite(socket, encodedMsg);
+
+            // 压测时适当加大超时时间（建议 5~10 秒）
+            return responseFuture.get(5, TimeUnit.SECONDS);
+
+        } catch (TimeoutException e) {
+            log.error("RPC 请求超时, RequestId: {}", requestId);
+            throw new RuntimeException("RPC 调用超时");
+        } catch (Exception e) {
+            log.error("RPC 发送请求异常", e);
+            throw new RuntimeException("RPC 调用异常", e);
+        } finally {
+            CompletableFuture<RpcResponse> future = PendingRequestManager.PENDING_REQUESTS.remove(requestId);
+            if (future != null && !future.isDone()) {
+                future.cancel(true);
             }
-        });
-
-//        netClient.close();
-        return completableFuture.get();
+        }
     }
 }

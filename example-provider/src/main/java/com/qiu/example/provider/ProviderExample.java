@@ -22,7 +22,7 @@ public class ProviderExample {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         // 获取端口参数
-        int port = 18080; // 默认端口
+        int port = 18082; // 默认端口
         if (args.length > 0) {
             try {
                 port = Integer.parseInt(args[0]); // 从命令行参数获取端口

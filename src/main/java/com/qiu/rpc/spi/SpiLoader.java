@@ -53,7 +53,7 @@ public class SpiLoader {
     }
 
     public static Map<String, Class<?>> load(Class<?> clazz) {
-        log.info("Loading SPI class: {}", clazz.getName());
+        // log.info("Loading SPI class: {}", clazz.getName());
         Map<String, Class<?>> keyClassMap = new HashMap<>();
         for (String dir : SCAN_DIRS) {
             List<URL> resources = ResourceUtil.getResources(dir  + "/" + clazz.getName());
@@ -80,7 +80,7 @@ public class SpiLoader {
                         try {
                             Class<?> implClass = Class.forName(className);
                             keyClassMap.put(key, implClass);
-                            log.info("Loaded SPI implementation: key={}, class={}", key, className);
+                            // log.info("Loaded SPI implementation: key={}, class={}", key, className);
                         } catch (ClassNotFoundException e) {
                             log.error("SPI implementation class not found: {}", className, e);
                         }

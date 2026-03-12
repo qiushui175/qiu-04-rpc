@@ -15,7 +15,7 @@ import com.qiu.example.common.service.UserService;
 public class UserServiceImpl implements UserService {
     @Override
     public User getUser(Integer id) {
-        System.out.println("UserServiceImpl.getUser: " + id);
+//        System.out.println("UserServiceImpl.getUser: " + id);
         return new User("default" + id, id);
     }
 }

@@ -108,7 +108,7 @@ public class EtcdRegistry implements Registry {
         // 从缓存中读取
         List<ServiceMetaInfo> serviceMetaInfos = registryServiceCache.getServiceCache(serviceKey);
         if (CollUtil.isNotEmpty(serviceMetaInfos)) {
-            log.info("Get service info from local cache: {}", serviceKey);
+            // log.info("Get service info from local cache: {}", serviceKey);
             return serviceMetaInfos;
         }
 
@@ -126,7 +126,7 @@ public class EtcdRegistry implements Registry {
             watch(kv.getKey().toString(StandardCharsets.UTF_8));
         });
         registryServiceCache.writeServiceCache(serviceKey, finalServiceMetaInfos);
-        log.info("Get service info from etcd registry: {}", serviceKey);
+        // log.info("Get service info from etcd registry: {}", serviceKey);
         return finalServiceMetaInfos;
     }
 
@@ -182,7 +182,7 @@ public class EtcdRegistry implements Registry {
 
                     List<KeyValue> kvs = response.getKvs();
                     if (CollUtil.isEmpty(kvs)) {
-                        log.info("Service node expired, need to re-register: {}", key);
+                        // log.info("Service node expired, need to re-register: {}", key);
                         continue;
                     }
 
@@ -193,7 +193,7 @@ public class EtcdRegistry implements Registry {
 
                     try {
                         register(serviceMetaInfo);
-//                        log.info("Service node renewed: {}", key);
+//                        // log.info("Service node renewed: {}", key);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -220,7 +220,7 @@ public class EtcdRegistry implements Registry {
                     for (WatchEvent event : response.getEvents()) {
                         if (event.getEventType() == WatchEvent.EventType.DELETE) {
                             String key = event.getKeyValue().getKey().toString(StandardCharsets.UTF_8);
-                            log.info("Service node deleted: {}", key);
+                            // log.info("Service node deleted: {}", key);
 
                             // 清缓存（按服务维度）
                             //  只删除对应节点的服务，而不是全部清理

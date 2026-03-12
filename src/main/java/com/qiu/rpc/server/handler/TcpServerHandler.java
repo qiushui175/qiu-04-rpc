@@ -58,7 +58,7 @@ public class TcpServerHandler implements Handler<NetSocket> {
             try {
                 Buffer resp = ProtocolMessageEncoder.encode(responseProtocolMessage);
                 netSocket.write(resp);
-                log.info("Response sent to client");
+                // log.info("Response sent to client");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
