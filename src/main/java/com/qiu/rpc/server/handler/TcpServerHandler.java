@@ -53,14 +53,15 @@ public class TcpServerHandler implements Handler<NetSocket> {
             header.setMessageType((byte) ProtocolMessageTypeEnum.RESPONSE.getType());
             ProtocolMessage<RpcResponse> responseProtocolMessage = new ProtocolMessage<>(header, response);
             try {
+                // encode() 将 Header 字段写入独立 Buffer，完成后 Header 不再被 Buffer 引用
                 Buffer resp = ProtocolMessageEncoder.encode(responseProtocolMessage);
+                // 编码完成后立即归还 Header 到对象池（Buffer 已持有数据副本）
+                ProtocolMessagePool.releaseHeader(header);
                 netSocket.write(resp);
                 log.info("Response sent to client");
             } catch (IOException e) {
-                throw new RuntimeException(e);
-            } finally {
-                // 将 Header 归还到对象池，供后续请求复用
                 ProtocolMessagePool.releaseHeader(header);
+                throw new RuntimeException(e);
             }
 
         });

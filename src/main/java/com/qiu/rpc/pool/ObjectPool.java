@@ -52,6 +52,8 @@ public class ObjectPool<T> {
     /**
      * 将对象归还到池中。归还前会调用 reset 函数清理对象状态。
      * 如果池已满，则直接丢弃该对象，由 GC 回收。
+     * <p>
+     * 使用 CAS 操作保证并发安全，避免池大小超过上限。
      *
      * @param obj 待归还的对象
      */
@@ -59,10 +61,16 @@ public class ObjectPool<T> {
         if (obj == null) {
             return;
         }
-        if (currentSize.get() < maxSize) {
-            reset.accept(obj);
-            pool.offer(obj);
-            currentSize.incrementAndGet();
+        while (true) {
+            int current = currentSize.get();
+            if (current >= maxSize) {
+                return;
+            }
+            if (currentSize.compareAndSet(current, current + 1)) {
+                reset.accept(obj);
+                pool.offer(obj);
+                return;
+            }
         }
     }
 

@@ -21,6 +21,7 @@ import com.qiu.rpc.registry.RegistryFactory;
 import com.qiu.rpc.serializer.Serializer;
 import com.qiu.rpc.server.tcp.VertxTcpFactory;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
 import lombok.extern.slf4j.Slf4j;
@@ -137,12 +138,14 @@ public class ServiceProxy implements InvocationHandler {
 
                 try {
                     // 编码（使用 Direct Memory 零拷贝 Buffer）
-                    resultSocket.write(ProtocolMessageEncoder.encode(protocolMessage));
-                } catch (Exception e) {
-                    completableFuture.completeExceptionally(e);
-                } finally {
-                    // 编码完成后归还 Header 到对象池
+                    // encode() 将 Header 字段写入独立 Buffer，完成后 Header 不再被 Buffer 引用
+                    Buffer encodedBuffer = ProtocolMessageEncoder.encode(protocolMessage);
+                    // 编码完成后立即归还 Header 到对象池（Buffer 已持有数据副本）
                     ProtocolMessagePool.releaseHeader(header);
+                    resultSocket.write(encodedBuffer);
+                } catch (Exception e) {
+                    ProtocolMessagePool.releaseHeader(header);
+                    completableFuture.completeExceptionally(e);
                 }
 
                 resultSocket.handler(buffer -> {
